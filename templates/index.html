@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Planner Interface</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            padding-top: 50px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Route Planner</h1>
+
+        <!-- Add Node Section -->
+        <div class="card mb-4">
+            <div class="card-header">Add Node</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="nodeInput" placeholder="Enter node name">
+                </div>
+                <button class="btn btn-primary" onclick="addNode()">Add Node</button>
+            </div>
+        </div>
+
+        <!-- Node List Section -->
+        <div class="card mb-4">
+            <div class="card-header">Added Nodes</div>
+            <div class="card-body">
+                <ul id="nodeList" class="list-group">
+                    <li class="list-group-item">No nodes added yet.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Add Edge Section -->
+        <div class="card mb-4">
+            <div class="card-header">Add Edge</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <input type="text" class="form-control mb-2" id="fromNodeInput" placeholder="From node">
+                    <input type="text" class="form-control mb-2" id="toNodeInput" placeholder="To node">
+                    <input type="number" class="form-control mb-2" id="distanceInput" placeholder="Distance">
+                    <input type="number" class="form-control mb-2" id="speedLimitInput" placeholder="Speed limit">
+                    <input type="number" class="form-control mb-2" id="trafficFactorInput" placeholder="Traffic factor (e.g., 1.1)">
+                </div>
+                <button class="btn btn-primary" onclick="addEdge()">Add Edge</button>
+            </div>
+        </div>
+
+        <!-- Edge List Section -->
+        <div class="card mb-4">
+            <div class="card-header">Added Edges</div>
+            <div class="card-body">
+                <ul id="edgeList" class="list-group">
+                    <li class="list-group-item">No edges added yet.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Find Route Section -->
+        <div class="card mb-4">
+            <div class="card-header">Find Most Efficient Route</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <input type="text" class="form-control mb-2" id="startNodeInput" placeholder="Start node">
+                    <input type="text" class="form-control mb-2" id="endNodeInput" placeholder="End node">
+                </div>
+                <button class="btn btn-primary" onclick="findRoute()">Find Route</button>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="card">
+            <div class="card-header">Route Details</div>
+            <div class="card-body">
+                <p id="routeDetails">No route selected yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addNode() {
+            var node = $('#nodeInput').val();
+            $.ajax({
+                url: '/add_node',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ node: node }),
+                success: function(response) {
+                    alert(response.message);
+                    $('#nodeInput').val('');
+                    loadNodes();  // Refresh the node list
+                },
+                error: function(error) {
+                    alert('Error adding node');
+                }
+            });
+        }
+
+        function loadNodes() {
+            $.ajax({
+                url: '/get_nodes',
+                method: 'GET',
+                success: function(response) {
+                    var nodeList = $('#nodeList');
+                    nodeList.empty();  // Clear existing list
+                    if (response.nodes.length === 0) {
+                        nodeList.append('<li class="list-group-item">No nodes added yet.</li>');
+                    } else {
+                        response.nodes.forEach(function(node) {
+                            nodeList.append('<li class="list-group-item">' + node + '</li>');
+                        });
+                    }
+                },
+                error: function(error) {
+                    console.error('Error fetching nodes');
+                }
+            });
+        }
+
+        function loadEdges() {
+            $.ajax({
+                url: '/get_edges',
+                method: 'GET',
+                success: function(response) {
+                    var edgeList = $('#edgeList');
+                    edgeList.empty();  // Clear existing list
+                    if (response.edges.length === 0) {
+                        edgeList.append('<li class="list-group-item">No edges added yet.</li>');
+                    } else {
+                        response.edges.forEach(function(edge) {
+                            edgeList.append('<li class="list-group-item">' + edge.from + ' to ' + edge.to + ' (Distance: ' + edge.distance + ')</li>');
+                        });
+                    }
+                },
+                error: function(error) {
+                    console.error('Error fetching edges');
+                }
+            });
+        }
+
+        function addEdge() {
+            var fromNode = $('#fromNodeInput').val();
+            var toNode = $('#toNodeInput').val();
+            var distance = $('#distanceInput').val();
+            var speedLimit = $('#speedLimitInput').val();
+            var trafficFactor = $('#trafficFactorInput').val();
+
+            $.ajax({
+                url: '/add_edge',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    from_node: fromNode,
+                    to_node: toNode,
+                    distance: distance,
+                    speed_limit: speedLimit,
+                    traffic_factor: trafficFactor
+                }),
+                success: function(response) {
+                    alert(response.message);
+                    $('#fromNodeInput').val('');
+                    $('#toNodeInput').val('');
+                    $('#distanceInput').val('');
+                    $('#speedLimitInput').val('');
+                    $('#trafficFactorInput').val('');
+                    loadEdges();  // Refresh the edge list
+                },
+                error: function(error) {
+                    alert('Error adding edge');
+                }
+            });
+        }
+
+        function findRoute() {
+            var startNode = $('#startNodeInput').val();
+            var endNode = $('#endNodeInput').val();
+            $.ajax({
+                url: '/find_route',
+                method: 'GET',
+                data: { start: startNode, end: endNode },
+                success: function(response) {
+                    $('#routeDetails').text('Time: ' + response.time + ' hours, Fuel: ' + response.fuel + ' liters');
+                },
+                error: function(error) {
+                    $('#routeDetails').text('No route found or error occurred.');
+                }
+            });
+        }
+
+        // Load nodes and edges when the page is ready
+        $(document).ready(function() {
+            loadNodes();
+            loadEdges();
+        });
+    </script>
+</body>
+</html>
